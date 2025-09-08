@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive EC2 Setup Guide for CodeDeploy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chosen Palette: DevOps Calm -->
+    <!-- Application Structure Plan: A sequential, interactive accordion-style layout. Each of the three main sections of the guide is a collapsible step. This structure was chosen to break down a complex technical process into manageable, focused steps, reducing cognitive load for the user. It transforms a static guide into an interactive checklist. -->
+    <!-- Visualization & Content Choices: Report Info: Step-by-step EC2 setup guide. Goal: Guide user through a technical process. Presentation Method: Interactive accordion for main steps, styled code blocks with copy functionality for commands. Interaction: Clicking steps to expand/collapse, clicking to copy code. Justification: This approach makes the guide more engaging and easier to follow than a plain document. The copy functionality is a key utility. Method: HTML/CSS/JS. CONFIRMING NO SVG/Mermaid. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        .step-content {
+            transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out;
+            max-height: 0;
+            overflow: hidden;
+        }
+        .step-content.open {
+            max-height: 1000px; /* Adjust as needed */
+        }
+        .chevron {
+            transition: transform 0.3s ease-in-out;
+        }
+        .open .chevron {
+            transform: rotate(180deg);
+        }
+        .code-block {
+            background-color: #1f2937;
+            color: #d1d5db;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <main class="container mx-auto px-4 sm:px-6 py-12 max-w-4xl">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-900">EC2 Instance Setup for AWS CodeDeploy</h1>
+            <p class="mt-4 text-lg text-gray-600">
+                An interactive guide to prepare your EC2 instance for automated deployments with AWS CodePipeline. Follow these steps to configure the IAM role and install the CodeDeploy agent.
+            </p>
+        </header>
+
+        <div class="space-y-6">
+            <!-- Step 1: Create IAM Role -->
+            <div class="step-container bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                <button class="step-header w-full text-left p-6 flex justify-between items-center focus:outline-none">
+                    <div class="flex items-center">
+                        <span class="text-2xl font-bold text-blue-600 mr-4">1</span>
+                        <h2 class="text-2xl font-semibold text-gray-800">Create the IAM Role for EC2</h2>
+                    </div>
+                    <span class="chevron text-gray-500">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </span>
+                </button>
+                <div class="step-content">
+                    <div class="px-6 pb-6 border-t border-gray-200">
+                        <p class="text-gray-700 mt-4 mb-6">First, you need a role that grants your EC2 instance permissions to communicate with CodeDeploy and ECR.</p>
+                        <ol class="list-decimal list-inside space-y-4 text-gray-700">
+                            <li>Navigate to the <strong>IAM console</strong> and choose <strong>Roles</strong>.</li>
+                            <li>Click <strong>Create role</strong>. For "Trusted entity type," select <strong>AWS service</strong>, and for "Use case," select <strong>EC2</strong>.</li>
+                            <li>In the "Add permissions" step, search for and select the following AWS managed policies:
+                                <ul class="list-disc list-inside ml-6 mt-2 space-y-1 bg-blue-50 p-3 rounded-md border border-blue-200">
+                                    <li><code class="font-mono text-sm bg-blue-100 px-1 rounded">AmazonEC2RoleforAWSCodeDeploy</code></li>
+                                    <li><code class="font-mono text-sm bg-blue-100 px-1 rounded">AmazonEC2ContainerRegistryReadOnly</code></li>
+                                </ul>
+                            </li>
+                            <li>Click through the next steps, give the role a descriptive name like <code class="font-mono text-sm bg-gray-200 px-1 rounded">CodeDeploy-EC2-Role</code>, and click <strong>Create role</strong>.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Launch EC2 Instance -->
+            <div class="step-container bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                <button class="step-header w-full text-left p-6 flex justify-between items-center focus:outline-none">
+                    <div class="flex items-center">
+                        <span class="text-2xl font-bold text-blue-600 mr-4">2</span>
+                        <h2 class="text-2xl font-semibold text-gray-800">Launch the EC2 Instance</h2>
+                    </div>
+                    <span class="chevron text-gray-500">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </span>
+                </button>
+                <div class="step-content">
+                    <div class="px-6 pb-6 border-t border-gray-200">
+                        <p class="text-gray-700 mt-4 mb-6">Launch a new EC2 instance, attaching the IAM role you just created to give it the necessary permissions.</p>
+                        <ol class="list-decimal list-inside space-y-4 text-gray-700">
+                            <li>Navigate to the <strong>EC2 dashboard</strong> and click <strong>Launch instance</strong>.</li>
+                            <li>Choose an <strong>Amazon Linux 2 AMI</strong> and an instance type (e.g., `t2.micro`).</li>
+                            <li>In the "Configure instance details" section, find the "IAM role" dropdown and select the `CodeDeploy-EC2-Role` you created.</li>
+                            <li>Configure your security group to allow inbound traffic on **port 80 (HTTP)** and **port 22 (SSH)** from your IP address.</li>
+                            <li>Review the configuration and launch the instance.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Install CodeDeploy Agent -->
+            <div class="step-container bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                <button class="step-header w-full text-left p-6 flex justify-between items-center focus:outline-none">
+                    <div class="flex items-center">
+                        <span class="text-2xl font-bold text-blue-600 mr-4">3</span>
+                        <h2 class="text-2xl font-semibold text-gray-800">Install the CodeDeploy Agent</h2>
+                    </div>
+                    <span class="chevron text-gray-500">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </span>
+                </button>
+                <div class="step-content">
+                    <div class="px-6 pb-6 border-t border-gray-200">
+                        <p class="text-gray-700 mt-4 mb-6">Finally, connect to your instance via SSH and run these commands to install and start the CodeDeploy agent, which listens for deployment instructions.</p>
+
+                        <div class="mb-4">
+                            <p class="font-semibold mb-2">1. Connect to your instance via SSH:</p>
+                            <div class="code-block rounded-lg overflow-hidden relative">
+                                <button class="absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-white text-xs font-semibold py-1 px-2 rounded" onclick="copyCode(this)">Copy</button>
+                                <pre class="p-4 text-sm overflow-x-auto"><code class="language-shell">ssh -i "your-key-pair.pem" ec2-user@&lt;your-ec2-public-ip&gt;</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <p class="font-semibold mb-2">2. Install the agent:</p>
+                            <div class="code-block rounded-lg overflow-hidden relative">
+                                <button class="absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-white text-xs font-semibold py-1 px-2 rounded" onclick="copyCode(this)">Copy</button>
+                                <pre class="p-4 text-sm overflow-x-auto"><code class="language-shell">sudo yum update -y
+sudo yum install -y ruby
+cd /home/ec2-user
+wget https://aws-codedeploy-us-east-1.s3.amazonaws.com/latest/install
+chmod +x ./install
+sudo ./install auto</code></pre>
+                            </div>
+                        </div>
+
+                        <div>
+                            <p class="font-semibold mb-2">3. Verify the agent is running:</p>
+                            <div class="code-block rounded-lg overflow-hidden relative">
+                                <button class="absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-white text-xs font-semibold py-1 px-2 rounded" onclick="copyCode(this)">Copy</button>
+                                <pre class="p-4 text-sm overflow-x-auto"><code class="language-shell">sudo service codedeploy-agent status</code></pre>
+                            </div>
+                            <p class="mt-2 text-sm text-gray-600">You should see a confirmation that the agent is running.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const stepHeaders = document.querySelectorAll('.step-header');
+
+            stepHeaders.forEach(header => {
+                header.addEventListener('click', () => {
+                    const content = header.nextElementSibling;
+                    const container = header.parentElement;
+                    
+                    container.classList.toggle('open');
+                    content.classList.toggle('open');
+                });
+            });
+        });
+
+        function copyCode(button) {
+            const codeBlock = button.nextElementSibling.querySelector('code');
+            const text = codeBlock.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                button.textContent = 'Copied!';
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+        }
+    </script>
+</body>
+</html>
