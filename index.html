@@ -2,7 +2,67 @@
 <body>
   <pre> 
 
-Automated CI/CD for Docker on AWSThis guide provides a comprehensive, step-by-step walkthrough for creating a Continuous Integration and Continuous Deployment (CI/CD) pipeline on Amazon Web Services (AWS). This pipeline will automatically build a Docker image from a code change, push it to Docker Hub, and deploy the new image to an Amazon EC2 instance.PrerequisitesBefore you begin, ensure you have the following:AWS Account: With administrative access to create IAM roles, CodePipeline, CodeBuild, and EC2 instances.Source Code Repository: A repository on GitHub, AWS CodeCommit, or Bitbucket containing your application code and a Dockerfile.Docker Hub Account: A Docker Hub account to store your images.Amazon EC2 Instance: A running EC2 instance with Docker and the AWS CodeDeploy agent installed.Step 1: Secure Docker Hub Credentials in AWS Systems Manager Parameter StoreInstead of using AWS Secrets Manager, we will use AWS Systems Manager Parameter Store, which is a free service for this use case. We will store your Docker Hub username and Personal Access Token (PAT) as secure string parameters.Navigate to the AWS Systems Manager console and click on Parameter Store.Click "Create parameter".Create the first parameter for your username:Name: Give it a descriptive name, like /docker/username.Description: Add a brief description, e.g., Docker Hub Username.Tier: Choose Standard.Type: Choose SecureString.KMS key source: Use My current account and alias/aws/ssm.Value: Enter your Docker Hub username.Click "Create parameter".Repeat the process for your Personal Access Token (PAT):Name: Give it a descriptive name, like /docker/password.Description: Add a brief description, e.g., Docker Hub PAT.Tier: Choose Standard.Type: Choose SecureString.KMS key source: Use My current account and alias/aws/ssm.Value: Enter your Docker Hub PAT.Click "Create parameter".Step 2: Create the Build Configuration (buildspec.yml)The buildspec.yml file is the instruction set for AWS CodeBuild. It tells CodeBuild what to do at each phase of the build. Place this file in the root of your source code repository.This file will retrieve the credentials from Parameter Store, log in to Docker Hub, build the image, tag it, and push it.buildspec.ymlversion: 0.2
+Automated CI/CD for Docker on AWS
+This guide provides a comprehensive, step-by-step walkthrough for creating a Continuous Integration and Continuous Deployment (CI/CD) pipeline on Amazon Web Services (AWS). This pipeline will automatically build a Docker image from a code change, push it to Docker Hub, and deploy the new image to an Amazon EC2 instance.
+
+Prerequisites
+Before you begin, ensure you have the following:
+
+AWS Account: With administrative access to create IAM roles, CodePipeline, CodeBuild, and EC2 instances.
+
+Source Code Repository: A repository on GitHub, AWS CodeCommit, or Bitbucket containing your application code and a Dockerfile.
+
+Docker Hub Account: A Docker Hub account to store your images.
+
+Amazon EC2 Instance: A running EC2 instance with Docker and the AWS CodeDeploy agent installed.
+
+Step 1: Secure Docker Hub Credentials in AWS Systems Manager Parameter Store
+Instead of using AWS Secrets Manager, we will use AWS Systems Manager Parameter Store, which is a free service for this use case. We will store your Docker Hub username and Personal Access Token (PAT) as secure string parameters.
+
+Navigate to the AWS Systems Manager console and click on Parameter Store.
+
+Click "Create parameter".
+
+Create the first parameter for your username:
+
+Name: Give it a descriptive name, like /docker/username.
+
+Description: Add a brief description, e.g., Docker Hub Username.
+
+Tier: Choose Standard.
+
+Type: Choose SecureString.
+
+KMS key source: Use My current account and alias/aws/ssm.
+
+Value: Enter your Docker Hub username.
+
+Click "Create parameter".
+
+Repeat the process for your Personal Access Token (PAT):
+
+Name: Give it a descriptive name, like /docker/password.
+
+Description: Add a brief description, e.g., Docker Hub PAT.
+
+Tier: Choose Standard.
+
+Type: Choose SecureString.
+
+KMS key source: Use My current account and alias/aws/ssm.
+
+Value: Enter your Docker Hub PAT.
+
+Click "Create parameter".
+
+Step 2: Create the Build Configuration (buildspec.yml)
+The buildspec.yml file is the instruction set for AWS CodeBuild. It tells CodeBuild what to do at each phase of the build. Place this file in the root of your source code repository.
+
+This file will retrieve the credentials from Parameter Store, log in to Docker Hub, build the image, tag it, and push it.
+
+buildspec.yml
+
+version: 0.2
 
 # Define environment variables
 env:
@@ -43,7 +103,16 @@ artifacts:
     - image.json
     - appspec.yml
     - scripts/deploy.sh
-Note: The --with-decryption flag is essential for retrieving the value of a SecureString parameter.Step 3: Configure AWS CodeDeploy on Your EC2 InstanceTo automatically update the EC2 instance, you need to use AWS CodeDeploy. This involves installing the CodeDeploy agent and providing a deployment specification file (appspec.yml).a. Install CodeDeploy AgentOn your EC2 instance, run the following commands (for Amazon Linux 2):#!/bin/bash
+
+Note: The --with-decryption flag is essential for retrieving the value of a SecureString parameter.
+
+Step 3: Configure AWS CodeDeploy on Your EC2 Instance
+To automatically update the EC2 instance, you need to use AWS CodeDeploy. This involves installing the CodeDeploy agent and providing a deployment specification file (appspec.yml).
+
+a. Install CodeDeploy Agent
+On your EC2 instance, run the following commands (for Amazon Linux 2):
+
+#!/bin/bash
 sudo yum update -y
 sudo yum install ruby -y
 sudo yum install wget -y
@@ -53,7 +122,15 @@ chmod +x ./install
 sudo ./install auto
 sudo service codedeploy-agent status
 
-Note: Replace us-east-1 with your AWS region.b. Create the Deployment ScriptsCodeDeploy uses lifecycle hooks to run scripts at specific stages. Create a folder named scripts in your repository and a file inside it called deploy.sh. This script will pull the new image and restart the container.scripts/deploy.sh#!/bin/bash
+
+Note: Replace us-east-1 with your AWS region.
+
+b. Create the Deployment Scripts
+CodeDeploy uses lifecycle hooks to run scripts at specific stages. Create a folder named scripts in your repository and a file inside it called deploy.sh. This script will pull the new image and restart the container.
+
+scripts/deploy.sh
+
+#!/bin/bash
 IMAGE_URI="your-dockerhub-username/your-repo-name:latest" # Change to your image name
 
 # Stop and remove the old container if it exists
@@ -68,7 +145,13 @@ docker pull $IMAGE_URI
 # Run the new container, mapping the ports
 docker run -d --name my-app-container -p 80:8000 $IMAGE_URI
 
-c. Create the Application Specification File (appspec.yml)The appspec.yml file tells CodeDeploy which files to copy and which scripts to run. Place this file in the root of your repository.appspec.ymlversion: 0.0
+
+c. Create the Application Specification File (appspec.yml)
+The appspec.yml file tells CodeDeploy which files to copy and which scripts to run. Place this file in the root of your repository.
+
+appspec.yml
+
+version: 0.0
 os: linux
 files:
   - source: /
@@ -79,9 +162,79 @@ hooks:
       timeout: 300
       runas: ec2-user
 
-The AfterInstall hook ensures that the deploy.sh script runs after the new files (in this case, our build artifacts) have been copied to the EC2 instance.Step 4: Configure the AWS CodePipelineNow, we will tie all the pieces together into a fully automated pipeline.Navigate to the AWS CodePipeline console.Click "Create pipeline".Step 1: Choose pipeline settings. Give your pipeline a name. Choose a new service role for CodePipeline, and leave all other defaults.Step 2: Add source stage.Source provider: Choose your source (e.g., GitHub).Connect: Connect to your repository.Repository name: Select your repository.Branch name: Select the branch to monitor for changes (e.g., main).Change detection: Choose "AWS CodePipeline".Step 3: Add build stage.Build provider: Choose "AWS CodeBuild".Region: Select your region.Project name: Click "Create project".Project name: Give it a name (e.g., docker-pipeline-build).Environment: Choose a managed image, select "Ubuntu", and check "Privileged". This is essential for building Docker images.Service role: Create a new service role. This role will need permissions to access Parameter Store. Ensure you add a policy that allows ssm:GetParameter and kms:Decrypt actions on your specific parameter ARNs.Buildspec: Choose "Use a buildspec file" and ensure the path is buildspec.yml.Click "Continue to CodePipeline".Step 4: Add deploy stage.Deploy provider: Choose "AWS CodeDeploy".Application name: Create a new application (e.g., MyWebApp).Deployment group: Create a new group.Deployment group name: Give it a name (e.g., Production).Environment configuration: Choose "In-place" and select "Amazon EC2 instances".Install CodeDeploy Agent: Choose "Never" since we already did this manually.EC2 Instance Tags: Use tags to identify your EC2 instance (e.g., Key: Name, Value: MyWebAppInstance).Service role: Create a new service role for CodeDeploy. This role needs permissions to the EC2 instance.Click "Create deployment group".Review and create. Review your pipeline settings and click "Create pipeline".The pipeline will start running automatically. On the first run, it will:Source: Pull your code from the repository.Build: Run the buildspec.yml to build and push the Docker image to Docker Hub, and create the artifact files.Deploy: Trigger CodeDeploy to update the EC2 instance, which in turn runs the deploy.sh script to pull and run the new container.Subsequent commits to your source repository will trigger this entire process automatically.
 
+The AfterInstall hook ensures that the deploy.sh script runs after the new files (in this case, our build artifacts) have been copied to the EC2 instance.
 
+Step 4: Configure the AWS CodePipeline
+Now, we will tie all the pieces together into a fully automated pipeline.
+
+Navigate to the AWS CodePipeline console.
+
+Click "Create pipeline".
+
+Step 1: Choose pipeline settings. Give your pipeline a name. Choose a new service role for CodePipeline, and leave all other defaults.
+
+Step 2: Add source stage.
+
+Source provider: Choose your source (e.g., GitHub).
+
+Connect: Connect to your repository.
+
+Repository name: Select your repository.
+
+Branch name: Select the branch to monitor for changes (e.g., main).
+
+Change detection: Choose "AWS CodePipeline".
+
+Step 3: Add build stage.
+
+Build provider: Choose "AWS CodeBuild".
+
+Region: Select your region.
+
+Project name: Click "Create project".
+
+Project name: Give it a name (e.g., docker-pipeline-build).
+
+Environment: Choose a managed image, select "Ubuntu", and check "Privileged". This is essential for building Docker images.
+
+Service role: Create a new service role. This role will need permissions to access Parameter Store. Ensure you add a policy that allows ssm:GetParameter and kms:Decrypt actions on your specific parameter ARNs.
+
+Buildspec: Choose "Use a buildspec file" and ensure the path is buildspec.yml.
+
+Click "Continue to CodePipeline".
+
+Step 4: Add deploy stage.
+
+Deploy provider: Choose "AWS CodeDeploy".
+
+Application name: Create a new application (e.g., MyWebApp).
+
+Deployment group: Create a new group.
+
+Deployment group name: Give it a name (e.g., Production).
+
+Environment configuration: Choose "In-place" and select "Amazon EC2 instances".
+
+Install CodeDeploy Agent: Choose "Never" since we already did this manually.
+
+EC2 Instance Tags: Use tags to identify your EC2 instance (e.g., Key: Name, Value: MyWebAppInstance).
+
+Service role: Create a new service role for CodeDeploy. This role needs permissions to the EC2 instance.
+
+Click "Create deployment group".
+
+Review and create. Review your pipeline settings and click "Create pipeline".
+
+The pipeline will start running automatically. On the first run, it will:
+
+Source: Pull your code from the repository.
+
+Build: Run the buildspec.yml to build and push the Docker image to Docker Hub, and create the artifact files.
+
+Deploy: Trigger CodeDeploy to update the EC2 instance, which in turn runs the deploy.sh script to pull and run the new container.
+
+Subsequent commits to your source repository will trigger this entire process automatically.
 </pre>
 </body> 
   </html>
