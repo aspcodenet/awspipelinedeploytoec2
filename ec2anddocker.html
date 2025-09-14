@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Guide: AWS CI/CD Pipeline for Docker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chosen Palette: Calm Harmony (Slate, Sky Blue, White) -->
+    <!-- Application Structure Plan: The application uses an interactive process flow diagram (Source -> Build -> Deploy) as its primary navigation. Clicking a stage in the diagram dynamically populates a details panel with the relevant setup instructions, code snippets, and configuration files. This non-linear, visual structure was chosen to make a complex, multi-step technical guide more digestible and easily explorable than a traditional linear document. It allows users to quickly jump to the information they need while understanding how each piece fits into the overall CI/CD process. -->
+    <!-- Visualization & Content Choices: The core of the app is a diagram built with HTML/CSS (divs and borders) to represent the pipeline stages (Goal: Organize/Navigate). Clicking a stage reveals details in a side panel. Technical information and code snippets (`buildspec.yml`, `deploy.sh`) are presented in tabbed sections within this panel using styled `<pre>` blocks (Goal: Inform/Organize). This prevents information overload. Copy-to-clipboard buttons (Interaction) are added for usability. This approach avoids static text walls and provides a focused, task-oriented user experience. All graphics are made with HTML/CSS via Tailwind. Confirmed NO SVG/Mermaid. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        .pipeline-step {
+            transition: all 0.3s ease;
+        }
+        .pipeline-step.active {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            border-color: #0284c7;
+        }
+        .pipeline-arrow {
+            color: #94a3b8;
+        }
+        .code-block {
+            position: relative;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: #475569;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            opacity: 0.75;
+            transition: opacity 0.2s;
+        }
+        .code-block:hover .copy-btn {
+            opacity: 1;
+        }
+        .copy-btn-feedback {
+            display: none;
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: #16a34a;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+        }
+        .detail-tab {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .detail-tab.active {
+            border-color: #0284c7;
+            color: #0284c7;
+            background-color: #f0f9ff;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Interactive Guide: AWS CI/CD Pipeline for Docker</h1>
+            <p class="mt-2 text-slate-600 max-w-3xl mx-auto">An explorable walkthrough for automating Docker builds and deployments on AWS. Click on each stage of the pipeline to see detailed configuration and code.</p>
+        </header>
+
+        <main class="flex flex-col lg:flex-row gap-8">
+            <div class="lg:w-1/3">
+                <div id="prerequisites-section" class="pipeline-step bg-white p-6 rounded-xl shadow-md border-2 border-transparent cursor-pointer hover:shadow-lg mb-6">
+                    <h3 class="font-bold text-lg text-slate-900 flex items-center">
+                        <span class="mr-3 text-2xl">📋</span>
+                        Prerequisites
+                    </h3>
+                    <p class="text-sm text-slate-500 mt-1">What you need to get started.</p>
+                </div>
+
+                <div class="flex flex-col items-center">
+                     <div id="source-section" class="pipeline-step bg-white p-6 rounded-xl shadow-md border-2 border-transparent w-full cursor-pointer hover:shadow-lg">
+                        <h3 class="font-bold text-lg text-slate-900 flex items-center">
+                            <span class="mr-3 text-2xl">📂</span>
+                            1. Source
+                        </h3>
+                        <p class="text-sm text-slate-500 mt-1">Code Repository Setup</p>
+                    </div>
+
+                    <div class="pipeline-arrow text-4xl my-4">↓</div>
+
+                     <div id="build-section" class="pipeline-step bg-white p-6 rounded-xl shadow-md border-2 border-transparent w-full cursor-pointer hover:shadow-lg">
+                        <h3 class="font-bold text-lg text-slate-900 flex items-center">
+                            <span class="mr-3 text-2xl">🛠️</span>
+                            2. Build
+                        </h3>
+                         <p class="text-sm text-slate-500 mt-1">Image Creation & Push to Docker Hub</p>
+                    </div>
+
+                    <div class="pipeline-arrow text-4xl my-4">↓</div>
+
+                     <div id="deploy-section" class="pipeline-step bg-white p-6 rounded-xl shadow-md border-2 border-transparent w-full cursor-pointer hover:shadow-lg">
+                        <h3 class="font-bold text-lg text-slate-900 flex items-center">
+                            <span class="mr-3 text-2xl">🚀</span>
+                             3. Deploy
+                        </h3>
+                        <p class="text-sm text-slate-500 mt-1">Update EC2 Instance</p>
+                    </div>
+                </div>
+                 <div id="pipeline-section" class="pipeline-step bg-white p-6 rounded-xl shadow-md border-2 border-transparent cursor-pointer hover:shadow-lg mt-6">
+                    <h3 class="font-bold text-lg text-slate-900 flex items-center">
+                        <span class="mr-3 text-2xl">🔗</span>
+                        4. Pipeline Orchestration
+                    </h3>
+                    <p class="text-sm text-slate-500 mt-1">Connecting the stages with AWS CodePipeline.</p>
+                </div>
+            </div>
+
+            <div id="details-panel" class="lg:w-2/3 bg-white p-6 md:p-8 rounded-xl shadow-lg min-h-[500px]">
+                <!-- Dynamic content goes here -->
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const contentData = {
+            welcome: {
+                title: 'Welcome!',
+                html: `
+                    <div class="flex flex-col items-center justify-center h-full text-center">
+                        <h2 class="text-2xl font-bold text-slate-900 mb-2">Explore the Pipeline</h2>
+                        <p class="text-slate-600">Click on a step to the left to view its configuration details, required files, and setup instructions.</p>
+                        <div class="text-6xl mt-8 animate-pulse">👈</div>
+                    </div>
+                `
+            },
+            prerequisites: {
+                title: 'Prerequisites',
+                html: `
+                    <h2 class="text-2xl font-bold text-slate-900 mb-4">📋 Prerequisites</h2>
+                    <p class="text-slate-600 mb-6">Before you begin, ensure you have the following resources and permissions set up.</p>
+                    <ul class="list-disc list-inside space-y-3 text-slate-700">
+                        <li><strong>AWS Account:</strong> With administrative access to create IAM roles, CodePipeline, CodeBuild, and EC2 instances.</li>
+                        <li><strong>Source Code Repository:</strong> A repository on GitHub, AWS CodeCommit, or Bitbucket containing your application code and a <code>Dockerfile</code>.</li>
+                        <li><strong>Docker Hub Account:</strong> A Docker Hub account to store your container images. You will need a username and a Personal Access Token (PAT).</li>
+                        <li><strong>Amazon EC2 Instance:</strong> A running EC2 instance with Docker and the AWS CodeDeploy agent installed and configured.</li>
+                    </ul>
+                `
+            },
+            source: {
+                title: 'Source Stage',
+                 html: `
+                    <h2 class="text-2xl font-bold text-slate-900 mb-4">📂 Source Configuration</h2>
+                    <p class="text-slate-600 mb-6">The pipeline starts when a change is pushed to your source code repository. Your repository should contain your application code, a <code>Dockerfile</code>, and the configuration files for CodeBuild and CodeDeploy.</p>
+                    <h3 class="font-semibold text-lg mb-2">Repository Structure:</h3>
+                     <div class="bg-slate-100 p-4 rounded-lg text-sm font-mono text-slate-700">
+                        <p>your-repo/</p>
+                        <p class="ml-4">├── Dockerfile</p>
+                        <p class="ml-4">├── buildspec.yml</p>
+                        <p class="ml-4">├── appspec.yml</p>
+                        <p class="ml-4">├── scripts/</p>
+                        <p class="ml-8">│   └── deploy.sh</p>
+                        <p class="ml-4">└── src/  (your application code)</p>
+                    </div>
+                    <p class="text-slate-600 mt-6">When configuring the pipeline, you will connect AWS CodePipeline to this repository and select the branch you want to monitor (e.g., <code>main</code> or <code>master</code>).</p>
+                `
+            },
+            build: {
+                title: 'Build Stage',
+                tabs: {
+                    'Credentials (SSM)': `
+                        <h3 class="font-semibold text-lg mb-2">Secure Docker Hub Credentials</h3>
+                        <p class="text-slate-600 mb-4">To securely push to Docker Hub, store your credentials in AWS Systems Manager Parameter Store. This avoids hardcoding secrets in your build script.</p>
+                        <ol class="list-decimal list-inside space-y-4 text-slate-700">
+                            <li>Navigate to the <strong>AWS Systems Manager console</strong> and select <strong>Parameter Store</strong>.</li>
+                            <li>Click <strong>"Create parameter"</strong> to store your Docker Hub username. Use these settings:
+                                <ul class="list-disc list-inside ml-6 mt-2 bg-slate-50 p-3 rounded-md">
+                                    <li><strong>Name:</strong> <code>/docker/username</code></li>
+                                    <li><strong>Tier:</strong> Standard</li>
+                                    <li><strong>Type:</strong> SecureString</li>
+                                    <li><strong>Value:</strong> Your Docker Hub username</li>
+                                </ul>
+                            </li>
+                            <li>Create another parameter for your Personal Access Token (PAT):
+                                <ul class="list-disc list-inside ml-6 mt-2 bg-slate-50 p-3 rounded-md">
+                                    <li><strong>Name:</strong> <code>/docker/password</code></li>
+                                    <li><strong>Tier:</strong> Standard</li>
+                                    <li><strong>Type:</strong> SecureString</li>
+                                    <li><strong>Value:</strong> Your Docker Hub PAT</li>
+                                </ul>
+                            </li>
+                        </ol>
+                    `,
+                    'Build Spec (buildspec.yml)': `
+                        <h3 class="font-semibold text-lg mb-2">Build Configuration</h3>
+                        <p class="text-slate-600 mb-4">The <code>buildspec.yml</code> file instructs AWS CodeBuild how to build, tag, and push your Docker image. Place this file in your repository's root directory.</p>
+                        <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <span class="copy-btn-feedback">Copied!</span>
+                        <pre class="bg-slate-900 text-white p-4 rounded-lg overflow-x-auto"><code class="language-yaml">version: 0.2
+
+env:
+  variables:
+    DOCKER_IMAGE_NAME: "your-dockerhub-username/your-repo-name"
+    DOCKER_TAG: "latest"
+    USERNAME_PARAM_NAME: "/docker/username" 
+    PASSWORD_PARAM_NAME: "/docker/password"
+    REGION: "your-aws-region"
+
+phases:
+  pre_build:
+    commands:
+      - echo "Retrieving Docker Hub credentials..."
+      - DOCKER_HUB_USERNAME=$(aws ssm get-parameter --name "$USERNAME_PARAM_NAME" --with-decryption --query "Parameter.Value" --output text --region $REGION)
+      - DOCKER_HUB_PASSWORD=$(aws ssm get-parameter --name "$PASSWORD_PARAM_NAME" --with-decryption --query "Parameter.Value" --output text --region $REGION)
+      - echo "Logging in to Docker Hub..."
+      - docker login -u "$DOCKER_HUB_USERNAME" -p "$DOCKER_HUB_PASSWORD"
+  build:
+    commands:
+      - echo "Building the Docker image..."
+      - docker build -t $DOCKER_IMAGE_NAME .
+  post_build:
+    commands:
+      - echo "Tagging and pushing the Docker image..."
+      - docker tag $DOCKER_IMAGE_NAME:latest $DOCKER_IMAGE_NAME:$DOCKER_TAG
+      - docker push $DOCKER_IMAGE_NAME:$DOCKER_TAG
+      - echo "Push complete. Generating image manifest file..."
+      - printf '{"ImageUri":"%s"}' "$DOCKER_IMAGE_NAME:$DOCKER_TAG" > image.json
+artifacts:
+  files:
+    - image.json
+    - appspec.yml
+    - scripts/deploy.sh
+</code></pre></div>
+                    `
+                }
+            },
+            deploy: {
+                title: 'Deploy Stage',
+                tabs: {
+                    'EC2 Agent Setup': `
+                        <h3 class="font-semibold text-lg mb-2">Install CodeDeploy Agent</h3>
+                        <p class="text-slate-600 mb-4">The CodeDeploy agent must be running on your target EC2 instance to receive deployment instructions. Run these commands on an Amazon Linux 2 instance.</p>
+                        <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <span class="copy-btn-feedback">Copied!</span>
+                        <pre class="bg-slate-900 text-white p-4 rounded-lg overflow-x-auto"><code class="language-bash">#!/bin/bash
+sudo yum update -y
+sudo yum install ruby -y
+sudo yum install wget -y
+cd /home/ec2-user
+wget https://aws-codedeploy-us-east-1.s3.us-east-1.amazonaws.com/latest/install
+chmod +x ./install
+sudo ./install auto
+sudo service codedeploy-agent status
+</code></pre></div>
+                        <p class="text-sm text-slate-500 mt-2">Note: Remember to replace <code>us-east-1</code> with your specific AWS region.</p>
+                    `,
+                    'Deploy Script (deploy.sh)': `
+                        <h3 class="font-semibold text-lg mb-2">Deployment Script</h3>
+                        <p class="text-slate-600 mb-4">This script is executed by CodeDeploy on the EC2 instance. It stops the old container, pulls the new Docker image from Docker Hub, and starts a new container. Place this in a <code>/scripts</code> directory.</p>
+                        <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <span class="copy-btn-feedback">Copied!</span>
+                        <pre class="bg-slate-900 text-white p-4 rounded-lg overflow-x-auto"><code class="language-bash">#!/bin/bash
+IMAGE_URI="your-dockerhub-username/your-repo-name:latest"
+
+# Stop and remove the old container if it exists
+if [ $(docker ps -a -q -f name=my-app-container) ]; then
+  docker stop my-app-container
+  docker rm my-app-container
+fi
+
+# Pull the new Docker image
+docker pull $IMAGE_URI
+
+# Run the new container, mapping the ports
+docker run -d --name my-app-container -p 80:8000 $IMAGE_URI
+</code></pre></div>
+                    `,
+                    'App Spec (appspec.yml)': `
+                        <h3 class="font-semibold text-lg mb-2">Application Specification</h3>
+                        <p class="text-slate-600 mb-4">The <code>appspec.yml</code> file tells CodeDeploy what to do during a deployment, such as which files to copy and which scripts to run. Place this in your repository's root directory.</p>
+                        <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <span class="copy-btn-feedback">Copied!</span>
+                        <pre class="bg-slate-900 text-white p-4 rounded-lg overflow-x-auto"><code class="language-yaml">version: 0.0
+os: linux
+files:
+  - source: /
+    destination: /home/ec2-user/myapp
+hooks:
+  AfterInstall:
+    - location: scripts/deploy.sh
+      timeout: 300
+      runas: ec2-user
+</code></pre></div>
+                    `
+                }
+            },
+            pipeline: {
+                title: 'Pipeline Orchestration',
+                html: `
+                    <h2 class="text-2xl font-bold text-slate-900 mb-4">🔗 Pipeline Orchestration with AWS CodePipeline</h2>
+                    <p class="text-slate-600 mb-6">AWS CodePipeline automates the entire process, connecting the Source, Build, and Deploy stages. When you create the pipeline in the AWS console, you will configure each stage using the services and files detailed in the previous steps.</p>
+                    <div class="space-y-4">
+                        <div class="bg-slate-50 p-4 rounded-lg">
+                            <h3 class="font-semibold">1. Source Stage</h3>
+                            <p class="text-slate-700 text-sm">Connect CodePipeline to your GitHub, CodeCommit, or Bitbucket repository and branch.</p>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-lg">
+                            <h3 class="font-semibold">2. Build Stage</h3>
+                            <p class="text-slate-700 text-sm">Create a CodeBuild project linked to your source. Ensure its service role has permissions for SSM Parameter Store (<code>ssm:GetParameter</code>) and KMS (<code>kms:Decrypt</code>). Set the environment to "Privileged" for Docker builds.</p>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-lg">
+                            <h3 class="font-semibold">3. Deploy Stage</h3>
+                            <p class="text-slate-700 text-sm">Create a CodeDeploy application and deployment group. Target your EC2 instance(s) using tags (e.g., <code>Name: MyWebAppInstance</code>). The service role for CodeDeploy will need permissions to interact with your EC2 instances.</p>
+                        </div>
+                    </div>
+                    <p class="text-slate-600 mt-6">Once created, any push to the specified branch will automatically trigger the pipeline, resulting in a new Docker container being deployed to your EC2 instance.</p>
+                `
+            }
+        };
+
+        const detailsPanel = document.getElementById('details-panel');
+        const pipelineSteps = document.querySelectorAll('.pipeline-step');
+
+        function updateDetailsPanel(sectionKey) {
+            const data = contentData[sectionKey];
+            let html = `<h2 class="text-2xl font-bold text-slate-900 mb-4">${data.title}</h2>`;
+
+            if (data.tabs) {
+                const tabKeys = Object.keys(data.tabs);
+                html += `<div class="border-b border-slate-200 mb-4">`;
+                html += `<nav class="-mb-px flex space-x-6" aria-label="Tabs">`;
+                tabKeys.forEach((key, index) => {
+                    html += `<a class="detail-tab shrink-0 border-b-2 py-2 px-1 text-sm font-medium text-slate-500 hover:border-slate-300 hover:text-slate-700 ${index === 0 ? 'active' : ''}" data-tab-key="${key}">${key}</a>`;
+                });
+                html += `</nav></div>`;
+                
+                html += `<div id="tab-content-container">`;
+                tabKeys.forEach((key, index) => {
+                    html += `<div class="tab-content ${index === 0 ? '' : 'hidden'}">${data.tabs[key]}</div>`;
+                });
+                html += `</div>`;
+            } else {
+                html = data.html;
+            }
+
+            detailsPanel.innerHTML = html;
+            
+            if (data.tabs) {
+                const tabs = detailsPanel.querySelectorAll('.detail-tab');
+                tabs.forEach(tab => {
+                    tab.addEventListener('click', (event) => {
+                        const tabKey = event.target.dataset.tabKey;
+                        
+                        tabs.forEach(t => t.classList.remove('active'));
+                        event.target.classList.add('active');
+
+                        const allContent = detailsPanel.querySelectorAll('.tab-content');
+                        allContent.forEach(content => content.classList.add('hidden'));
+
+                        const activeContent = Array.from(allContent).find(c => data.tabs[tabKey] === c.innerHTML);
+                        if (activeContent) {
+                            activeContent.classList.remove('hidden');
+                        }
+                    });
+                });
+            }
+        }
+        
+        function copyCode(button) {
+            const codeBlock = button.closest('.code-block');
+            const code = codeBlock.querySelector('code').innerText;
+            const feedback = codeBlock.querySelector('.copy-btn-feedback');
+
+            navigator.clipboard.writeText(code).then(() => {
+                button.style.display = 'none';
+                feedback.style.display = 'inline';
+                setTimeout(() => {
+                    button.style.display = 'inline';
+                    feedback.style.display = 'none';
+                }, 2000);
+            });
+        }
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateDetailsPanel('welcome');
+
+            pipelineSteps.forEach(step => {
+                step.addEventListener('click', () => {
+                    pipelineSteps.forEach(s => s.classList.remove('active'));
+                    step.classList.add('active');
+
+                    const sectionKey = step.id.replace('-section', '');
+                    updateDetailsPanel(sectionKey);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
